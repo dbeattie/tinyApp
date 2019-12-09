@@ -28,11 +28,6 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-//LISTENING
-app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
-});
-
 //GET json FILE OF URLDATABASE
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
@@ -41,6 +36,11 @@ app.get("/urls.json", (req, res) => {
 //HELLO ROUTE
 app.get("/hello", (req, res) => {
   res.send("<html><body>Hello <b>World</b></body></html>\n");
+});
+
+//LISTENING
+app.listen(PORT, () => {
+  console.log(`Example app listening on port ${PORT}!`);
 });
 
 
