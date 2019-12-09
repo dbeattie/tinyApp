@@ -15,10 +15,17 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
-//URLS REQUEST
+
+//URLS GET REQUEST
 app.get("/urls", (req, res) => {
   let templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
+});
+
+//SHORT URL GET REQUEST
+app.get("/urls/:shortURL", (req, res) => {
+  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
+  res.render("urls_show", templateVars);
 });
 
 //LISTENING
