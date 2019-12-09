@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/dbeattie/tinyApp#readme",
   "dependencies": {
+    "ejs": "^3.0.1",
     "express": "^4.17.1"
   }
 }
