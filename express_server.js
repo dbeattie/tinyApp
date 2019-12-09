@@ -35,16 +35,24 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
+//POST REQUEST TO GENERATE NEW SHORT & LONG URL IN DATABASE --> REDIRECT TO urls_show
 app.post("/urls", (req, res) => {
-  let shortUrlKey = generateRandomString(6);
-  urlDatabase[shortUrlKey] = req.body.longURL;
-  res.redirect("/urls");    
+  let shortURL = generateRandomString(6);
+  urlDatabase[shortURL] = req.body.longURL;
+  let templateVars = { shortURL: shortURL, longURL: req.body.longURL };
+  res.redirect("urls_show", templateVars);
 });
 
 //SHORT URL GET REQUEST --> NEEDS TO BE AFTER NEW URLS GET REQUEST
 app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
   res.render("urls_show", templateVars);
+});
+
+//REDIRECTS TO LONG URL FROM SHORT URL -- EXAMPLE:"/u/gs5las"
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL];
+  res.redirect(longURL);
 });
 
 //GET json FILE OF URLDATABASE
