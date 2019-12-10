@@ -20,8 +20,8 @@ const generateRandomString = (length) => {
 //EMAIL LOOKUP HELPER
 const emailLookupHelper = (email) => {
   let usersValuesArr = Object.values(users);
-  for (userValue of usersValuesArr) {
-    if (userValue.email === email){
+  for (let userValue of usersValuesArr) {
+    if (userValue.email === email) {
       return true;
     }
   }
@@ -31,7 +31,7 @@ const emailLookupHelper = (email) => {
 //VERIFY USER HELPER
 const verifyUser = (email, password) => {
     let usersValuesArr = Object.values(users);
-    for (userValue of usersValuesArr) {
+    for (let userValue of usersValuesArr) {
       if (userValue.email === email && userValue.password === password) {
         return userValue.id;
       }
