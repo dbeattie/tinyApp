@@ -17,16 +17,28 @@ const generateRandomString = (length) => {
   return Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
 };
 
-//EMAIL LOOKUP
+//EMAIL LOOKUP HELPER
 const emailLookupHelper = (email) => {
   let usersValuesArr = Object.values(users);
-  for (userValue of usersValuesArr){
+  for (userValue of usersValuesArr) {
     if (userValue.email === email){
       return true;
     }
   }
   return false;
 };
+
+//VERIFY USER HELPER
+const verifyUser = (email, password) => {
+    let usersValuesArr = Object.values(users);
+    for (userValue of usersValuesArr) {
+      if (userValue.email === email && userValue.password === password) {
+        return userValue.id;
+      }
+    }
+    return false;
+  }
+  
 
 //DATABASE
 const urlDatabase = {
@@ -55,19 +67,19 @@ app.get("/", (req, res) => {
 
 //URLS GET REQUEST
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  let templateVars = { urls: urlDatabase, userID: users[req.cookies["user_id"]] };
   res.render("urls_index", templateVars);
 });
 
 //NEW URLS GET REQUEST TO RENDER PAGE
 app.get("/urls/new", (req, res) => {
-  let templateVars = { username: req.cookies["username"] };
+  let templateVars = { userID: users[req.cookies["user_id"]]  };
   res.render("urls_new", templateVars);
 });
 
 //RENDERS REGISTRATION PAGE
 app.get("/register", (req, res) => {
-  let templateVars = { username: req.cookies["username"] };
+  let templateVars = { userID: users[req.cookies["user_id"]]  };
   res.render("register", templateVars);
 });
 
@@ -92,8 +104,21 @@ app.post("/register", (req, res) => {
 
 //RENDERS LOGIN PAGE
 app.get("/login", (req, res) => {
-  let templateVars = { username: req.cookies["username"] };
+  let templateVars = { userID: undefined};
   res.render("login", templateVars);
+});
+
+//LOGIN POST ROUTE & REDIRECT TO /URLS
+app.post("/login", (req, res) => {
+  if (req.body.email === '' || req.body.password === '') {
+    res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
+  } else if (!emailLookupHelper(req.body.email) || !verifyUser(req.body.email, req.body.password)) {
+    res.status(403).send('403 Error: Forbidden')
+  } else {
+    let userID = verifyUser(req.body.email, req.body.password);
+    res.cookie('user_id', userID);
+    res.redirect('/urls');
+  }
 });
 
 //POST REQUEST TO GENERATE NEW SHORT & LONG URL IN DATABASE --> REDIRECT TO urls_show
@@ -108,7 +133,7 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies["username"]
+    userID: users[req.cookies["user_id"]] 
   };
   res.render("urls_show", templateVars);
 });
@@ -136,15 +161,9 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls');
 });
 
-//LOGIN POST ROUTE & REDIRECT TO /URLS
-app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect('/urls');
-});
-
-//LOGIN POST ROUTE & REDIRECT TO /URLS
+//LOGOUT POST ROUTE & REDIRECT TO /URLS
 app.post("/logout", (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie("user_id");
   res.redirect('/urls');
 });
 
