@@ -54,9 +54,23 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new", templateVars);
 });
 
+//RENDERS REGISTRATION PAGE
 app.get("/register", (req, res) => {
   let templateVars = { username: req.cookies["username"] };
   res.render("register", templateVars);
+});
+
+app.post("/register", (req, res) => {
+  let userID = generateRandomString(4);
+  let newUser = { 
+    id: userID, 
+    email: req.body["email"],
+    password: req.body["password"]
+  }
+  
+  users[userID] = newUser;
+  res.cookie('user_id', userID);
+  res.redirect("/urls");
 });
 
 //POST REQUEST TO GENERATE NEW SHORT & LONG URL IN DATABASE --> REDIRECT TO urls_show
