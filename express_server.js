@@ -13,15 +13,52 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
 //PASS THE NUMBER OF CHARACTERS YOU'D LIKE TO PRODUCE
-function generateRandomString(length) {
+const generateRandomString = (length) => {
   return Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
-}
+};
+
+//EMAIL LOOKUP HELPER
+const emailLookupHelper = (email) => {
+  let usersValuesArr = Object.values(users);
+  for (userValue of usersValuesArr) {
+    if (userValue.email === email){
+      return true;
+    }
+  }
+  return false;
+};
+
+//VERIFY USER HELPER
+const verifyUser = (email, password) => {
+    let usersValuesArr = Object.values(users);
+    for (userValue of usersValuesArr) {
+      if (userValue.email === email && userValue.password === password) {
+        return userValue.id;
+      }
+    }
+    return false;
+  }
+  
 
 //DATABASE
 const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
+
+//USERS
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "1234"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "5678"
+  }
+}
 
 //HOME PAGE
 app.get("/", (req, res) => {
@@ -30,14 +67,58 @@ app.get("/", (req, res) => {
 
 //URLS GET REQUEST
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  let templateVars = { urls: urlDatabase, userID: users[req.cookies["user_id"]] };
   res.render("urls_index", templateVars);
 });
 
 //NEW URLS GET REQUEST TO RENDER PAGE
 app.get("/urls/new", (req, res) => {
-  let templateVars = { username: req.cookies["username"] };
+  let templateVars = { userID: users[req.cookies["user_id"]]  };
   res.render("urls_new", templateVars);
+});
+
+//RENDERS REGISTRATION PAGE
+app.get("/register", (req, res) => {
+  let templateVars = { userID: users[req.cookies["user_id"]]  };
+  res.render("register", templateVars);
+});
+
+app.post("/register", (req, res) => {
+  let userID = generateRandomString(4);
+  let newUser = { 
+    id: userID, 
+    email: req.body["email"],
+    password: req.body["password"]
+  }
+
+  if (req.body.email === '' || req.body.password === '') {
+    res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
+  } else if (emailLookupHelper(req.body.email)) {
+    res.status(400).send('400 Error: Bad Request')
+  } else {
+    users[userID] = newUser;
+    res.cookie('user_id', userID);
+    res.redirect("/urls");
+  }
+});
+
+//RENDERS LOGIN PAGE
+app.get("/login", (req, res) => {
+  let templateVars = { userID: undefined};
+  res.render("login", templateVars);
+});
+
+//LOGIN POST ROUTE & REDIRECT TO /URLS
+app.post("/login", (req, res) => {
+  if (req.body.email === '' || req.body.password === '') {
+    res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
+  } else if (!emailLookupHelper(req.body.email) || !verifyUser(req.body.email, req.body.password)) {
+    res.status(403).send('403 Error: Forbidden')
+  } else {
+    let userID = verifyUser(req.body.email, req.body.password);
+    res.cookie('user_id', userID);
+    res.redirect('/urls');
+  }
 });
 
 //POST REQUEST TO GENERATE NEW SHORT & LONG URL IN DATABASE --> REDIRECT TO urls_show
@@ -52,7 +133,7 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { 
     shortURL: req.params.shortURL, 
     longURL: urlDatabase[req.params.shortURL],
-    username: req.cookies["username"]
+    userID: users[req.cookies["user_id"]] 
   };
   res.render("urls_show", templateVars);
 });
@@ -80,15 +161,9 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls');
 });
 
-//LOGIN POST ROUTE & REDIRECT TO /URLS
-app.post("/login", (req, res) => {
-  res.cookie('username', req.body.username);
-  res.redirect('/urls');
-});
-
-//LOGIN POST ROUTE & REDIRECT TO /URLS
+//LOGOUT POST ROUTE & REDIRECT TO /URLS
 app.post("/logout", (req, res) => {
-  res.clearCookie('username');
+  res.clearCookie("user_id");
   res.redirect('/urls');
 });
 
