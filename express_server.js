@@ -2,6 +2,10 @@ const express = require("express");
 const app = express();
 const PORT = 8080; 
 
+//COOKIE PARSER MIDDLEWARE
+var cookieParser = require('cookie-parser');
+app.use(cookieParser());
+
 //BODY PARSER MIDDLEWARE
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
@@ -26,13 +30,14 @@ app.get("/", (req, res) => {
 
 //URLS GET REQUEST
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
+  let templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render("urls_index", templateVars);
 });
 
 //NEW URLS GET REQUEST TO RENDER PAGE
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let templateVars = { username: req.cookies["username"] };
+  res.render("urls_new", templateVars);
 });
 
 //POST REQUEST TO GENERATE NEW SHORT & LONG URL IN DATABASE --> REDIRECT TO urls_show
@@ -46,7 +51,8 @@ app.post("/urls", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   let templateVars = { 
     shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL]
+    longURL: urlDatabase[req.params.shortURL],
+    username: req.cookies["username"]
   };
   res.render("urls_show", templateVars);
 });
@@ -74,10 +80,16 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect('/urls');
 })
 
-//GET json FILE OF URLDATABASE
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
+//LOGIN POST ROUTE & REDIRECT TO /URLS
+app.post("/login", (req, res) => {
+  res.cookie('username', req.body.username);
+  res.redirect('/urls');
+})
+
+// //GET json FILE OF URLDATABASE
+// app.get("/urls.json", (req, res) => {
+//   res.json(urlDatabase);
+// });
 
 // //HELLO ROUTE
 // app.get("/hello", (req, res) => {
