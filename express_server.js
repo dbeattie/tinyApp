@@ -78,13 +78,19 @@ app.post("/urls/:id", (req, res) => {
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
   res.redirect('/urls');
-})
+});
 
 //LOGIN POST ROUTE & REDIRECT TO /URLS
 app.post("/login", (req, res) => {
   res.cookie('username', req.body.username);
   res.redirect('/urls');
-})
+});
+
+//LOGIN POST ROUTE & REDIRECT TO /URLS
+app.post("/logout", (req, res) => {
+  res.clearCookie('username');
+  res.redirect('/urls');
+});
 
 // //GET json FILE OF URLDATABASE
 // app.get("/urls.json", (req, res) => {
