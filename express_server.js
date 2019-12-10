@@ -23,6 +23,20 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+//USERS
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
+
 //HOME PAGE
 app.get("/", (req, res) => {
   res.send("Hello!");
@@ -38,6 +52,11 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   let templateVars = { username: req.cookies["username"] };
   res.render("urls_new", templateVars);
+});
+
+app.get("/register", (req, res) => {
+  let templateVars = { username: req.cookies["username"] };
+  res.render("register", templateVars);
 });
 
 //POST REQUEST TO GENERATE NEW SHORT & LONG URL IN DATABASE --> REDIRECT TO urls_show
