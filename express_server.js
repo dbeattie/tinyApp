@@ -13,9 +13,20 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
 //PASS THE NUMBER OF CHARACTERS YOU'D LIKE TO PRODUCE
-function generateRandomString(length) {
+const generateRandomString = (length) => {
   return Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
-}
+};
+
+//EMAIL LOOKUP
+const emailLookupHelper = (email) => {
+  let usersValuesArr = Object.values(users);
+  for (userValue of usersValuesArr){
+    if (userValue.email === email){
+      return true;
+    }
+  }
+  return false;
+};
 
 //DATABASE
 const urlDatabase = {
@@ -28,12 +39,12 @@ const users = {
   "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
+    password: "1234"
   },
  "user2RandomID": {
     id: "user2RandomID", 
     email: "user2@example.com", 
-    password: "dishwasher-funk"
+    password: "5678"
   }
 }
 
@@ -67,10 +78,16 @@ app.post("/register", (req, res) => {
     email: req.body["email"],
     password: req.body["password"]
   }
-  
-  users[userID] = newUser;
-  res.cookie('user_id', userID);
-  res.redirect("/urls");
+
+  if (req.body.email === '' || req.body.password === '') {
+    res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
+  } else if (emailLookupHelper(req.body.email)) {
+    res.status(400).send('400 Error: Bad Request')
+  } else {
+    users[userID] = newUser;
+    res.cookie('user_id', userID);
+    res.redirect("/urls");
+  }
 });
 
 //POST REQUEST TO GENERATE NEW SHORT & LONG URL IN DATABASE --> REDIRECT TO urls_show
