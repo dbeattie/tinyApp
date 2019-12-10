@@ -39,7 +39,7 @@ app.get("/urls/new", (req, res) => {
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString(6);
   urlDatabase[shortURL] = req.body.longURL;
-  res.redirect("/urls");
+  res.redirect(`/urls/${shortURL}`);
 });
 
 //SHORT URL GET REQUEST --> NEEDS TO BE AFTER NEW URLS GET REQUEST
