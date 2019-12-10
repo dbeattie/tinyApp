@@ -39,13 +39,15 @@ app.get("/urls/new", (req, res) => {
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString(6);
   urlDatabase[shortURL] = req.body.longURL;
-  let templateVars = { shortURL: shortURL, longURL: req.body.longURL };
-  res.render("urls_show", templateVars);
+  res.redirect("/urls");
 });
 
 //SHORT URL GET REQUEST --> NEEDS TO BE AFTER NEW URLS GET REQUEST
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
+  let templateVars = { 
+    shortURL: req.params.shortURL, 
+    longURL: urlDatabase[req.params.shortURL]
+  };
   res.render("urls_show", templateVars);
 });
 
@@ -55,10 +57,20 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
+//EDIT BUTTON REDIRECT ON INDEX PAGE TO URL SHOW
+app.post("/urls/:shortURL/edit", (req, res) => {
+    res.redirect(`/urls/${req.params.shortURL}`);
+});
+
+//EDIT POST ROUTE TO UPDATE URL RESOURCE
+app.post("/urls/:id", (req, res) => {
+  urlDatabase[req.params.id] = req.body.longURL;
+  res.redirect("/urls");
+});
+
 //DELETE BUTTON POST ON INDEX PAGE
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
-  console.log(urlDatabase);
   res.redirect('/urls');
 })
 
@@ -67,10 +79,10 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-//HELLO ROUTE
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
+// //HELLO ROUTE
+// app.get("/hello", (req, res) => {
+//   res.send("<html><body>Hello <b>World</b></body></html>\n");
+// });
 
 //LISTENING
 app.listen(PORT, () => {
