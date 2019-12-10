@@ -90,6 +90,12 @@ app.post("/register", (req, res) => {
   }
 });
 
+//RENDERS LOGIN PAGE
+app.get("/login", (req, res) => {
+  let templateVars = { username: req.cookies["username"] };
+  res.render("login", templateVars);
+});
+
 //POST REQUEST TO GENERATE NEW SHORT & LONG URL IN DATABASE --> REDIRECT TO urls_show
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString(6);
