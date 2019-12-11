@@ -12,6 +12,8 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 app.set("view engine", "ejs");
 
+const bcrypt = require('bcrypt');
+
 //PASS THE NUMBER OF CHARACTERS YOU'D LIKE TO PRODUCE
 const generateRandomString = (length) => {
   return Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
@@ -32,7 +34,7 @@ const emailLookupHelper = (email) => {
 const verifyUser = (email, password) => {
   let usersValuesArr = Object.values(users);
   for (let userValue of usersValuesArr) {
-    if (userValue.email === email && userValue.password === password) {
+    if (userValue.email === email && bcrypt.compareSync(password, userValue.hashedPassword)) {
       return userValue.id;
     }
   }
@@ -70,12 +72,12 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "1234"
+    hashedPassword: "$2b$10$.QkYXtO3ASSwH9anw48REekhLjB.U242E8w03gkx5eW4gXuSpLUPW"
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "5678"
+    hashedPassword: "$2b$10$wHcU75ZpPcq1iUeBo6kSnOOuxnblT8hmiLIfHSFTYYcvynmUUsyku"
   }
 };
 
@@ -113,20 +115,25 @@ app.get("/register", (req, res) => {
   res.render("register", templateVars);
 });
 
+//REDIRECT AFTER COMPLETING THE REGISTRATION FORM
 app.post("/register", (req, res) => {
-  let userID = generateRandomString(4);
-  let newUser = {
-    id: userID,
-    email: req.body["email"],
-    password: req.body["password"]
-  };
-
   if (req.body.email === '' || req.body.password === '') {
     res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
   } else if (emailLookupHelper(req.body.email)) {
     res.status(400).send('400 Error: Bad Request');
   } else {
+
+    let userID = generateRandomString(4);
+    const hashedPassword = bcrypt.hashSync(req.body['password'], 10);
+    
+    let newUser = {
+      id: userID,
+      email: req.body["email"],
+      hashedPassword: hashedPassword
+    };
+
     users[userID] = newUser;
+    console.log(users);
     res.cookie('user_id', userID);
     res.redirect("/urls");
   }
@@ -145,6 +152,7 @@ app.post("/login", (req, res) => {
   } else if (!emailLookupHelper(req.body.email) || !verifyUser(req.body.email, req.body.password)) {
     res.status(403).send('403 Error: Forbidden');
   } else {
+    console.log(users);
     let userID = verifyUser(req.body.email, req.body.password);
     res.cookie('user_id', userID);
     res.redirect('/urls');
@@ -158,7 +166,6 @@ app.post("/urls", (req, res) => {
     longURL: req.body.longURL,
     userID: req.cookies["user_id"]
   };
-  console.log(urlDatabase);
   res.redirect(`/urls/${shortURL}`);
 });
 
