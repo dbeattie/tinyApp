@@ -1,9 +1,9 @@
 const express = require("express");
 const app = express();
-const PORT = 8080; 
+const PORT = 8080;
 
 //COOKIE PARSER MIDDLEWARE
-var cookieParser = require('cookie-parser');
+let cookieParser = require('cookie-parser');
 app.use(cookieParser());
 
 //BODY PARSER MIDDLEWARE
@@ -30,51 +30,81 @@ const emailLookupHelper = (email) => {
 
 //VERIFY USER HELPER
 const verifyUser = (email, password) => {
-    let usersValuesArr = Object.values(users);
-    for (let userValue of usersValuesArr) {
-      if (userValue.email === email && userValue.password === password) {
-        return userValue.id;
-      }
+  let usersValuesArr = Object.values(users);
+  for (let userValue of usersValuesArr) {
+    if (userValue.email === email && userValue.password === password) {
+      return userValue.id;
     }
-    return false;
   }
-  
+  return false;
+};
 
-//DATABASE
+//VALIDATES USER ACCESS TO SPECIFIC ROUTES/PAGES
+const urlsForUser = (id) => {
+  let urlsForUser = {};
+  for (let url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      urlsForUser[url] = urlDatabase[url];
+    }
+  }
+  return urlsForUser;
+};
+  
+// //OLD URL DATA
+// const urlDatabase = {
+//   "b2xVn2": "http://www.lighthouselabs.ca",
+//   "9sm5xK": "http://www.google.com"
+// };
+
+
+//NEW DATA OBJECT OF OBJECTS
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: { longURL: "http://www.tsn.ca", userID: "userRandomID" },
+  i3BoGr: { longURL: "http://www.google.ca", userID: "userRandomID" },
+  b2xVn2: { longURL: "http://www.lighthouselabs.ca", userID: "user2RandomID" },
+  sm5xK9: { longURL: "http://jaysfromthecouch.com/", userID: "user2RandomID" }
 };
 
 //USERS
-const users = { 
+const users = {
   "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
+    id: "userRandomID",
+    email: "user@example.com",
     password: "1234"
   },
- "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
     password: "5678"
   }
-}
+};
 
-//HOME PAGE
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
+// //HOME PAGE
+// app.get("/", (req, res) => {
+//   res.send("Hello!");
+// });
 
 //URLS GET REQUEST
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase, userID: users[req.cookies["user_id"]] };
-  res.render("urls_index", templateVars);
+  let templateVars = {
+    urls: urlsForUser(req.cookies["user_id"]),
+    userID: users[req.cookies["user_id"]]
+  };
+  if (req.cookies["user_id"]) {
+    res.render("urls_index", templateVars);
+  } else {
+    res.redirect("/login");
+  }
 });
 
 //NEW URLS GET REQUEST TO RENDER PAGE
 app.get("/urls/new", (req, res) => {
   let templateVars = { userID: users[req.cookies["user_id"]]  };
-  res.render("urls_new", templateVars);
+  if (req.cookies["user_id"]) {
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect("/login");
+  }
 });
 
 //RENDERS REGISTRATION PAGE
@@ -85,16 +115,16 @@ app.get("/register", (req, res) => {
 
 app.post("/register", (req, res) => {
   let userID = generateRandomString(4);
-  let newUser = { 
-    id: userID, 
+  let newUser = {
+    id: userID,
     email: req.body["email"],
     password: req.body["password"]
-  }
+  };
 
   if (req.body.email === '' || req.body.password === '') {
     res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
   } else if (emailLookupHelper(req.body.email)) {
-    res.status(400).send('400 Error: Bad Request')
+    res.status(400).send('400 Error: Bad Request');
   } else {
     users[userID] = newUser;
     res.cookie('user_id', userID);
@@ -113,7 +143,7 @@ app.post("/login", (req, res) => {
   if (req.body.email === '' || req.body.password === '') {
     res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
   } else if (!emailLookupHelper(req.body.email) || !verifyUser(req.body.email, req.body.password)) {
-    res.status(403).send('403 Error: Forbidden')
+    res.status(403).send('403 Error: Forbidden');
   } else {
     let userID = verifyUser(req.body.email, req.body.password);
     res.cookie('user_id', userID);
@@ -124,41 +154,63 @@ app.post("/login", (req, res) => {
 //POST REQUEST TO GENERATE NEW SHORT & LONG URL IN DATABASE --> REDIRECT TO urls_show
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString(6);
-  urlDatabase[shortURL] = req.body.longURL;
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userID: req.cookies["user_id"]
+  };
+  console.log(urlDatabase);
   res.redirect(`/urls/${shortURL}`);
 });
 
 //SHORT URL GET REQUEST --> NEEDS TO BE AFTER NEW URLS GET REQUEST
 app.get("/urls/:shortURL", (req, res) => {
-  let templateVars = { 
-    shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL],
-    userID: users[req.cookies["user_id"]] 
+  let templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL].longURL,
+    userID: users[req.cookies["user_id"]]
   };
-  res.render("urls_show", templateVars);
+  if (req.cookies["user_id"]) {
+    res.render("urls_show", templateVars);
+  } else {
+    res.redirect("/login");
+  }
 });
 
 //REDIRECTS TO LONG URL FROM SHORT URL -- EXAMPLE:"/u/gs5las"
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
 //EDIT BUTTON REDIRECT ON INDEX PAGE TO URL SHOW
 app.post("/urls/:shortURL/edit", (req, res) => {
-    res.redirect(`/urls/${req.params.shortURL}`);
+  let templateVars = {
+    shortURL: req.params.shortURL,
+    longURL: urlDatabase[req.params.shortURL].longURL,
+    userID: users[req.cookies["user_id"]]
+  };
+  res.render("urls_show", templateVars);
+  //res.redirect(`/urls/${req.params.shortURL}`);
 });
 
 //EDIT POST ROUTE TO UPDATE URL RESOURCE
 app.post("/urls/:id", (req, res) => {
-  urlDatabase[req.params.id] = req.body.longURL;
-  res.redirect("/urls");
+  if (req.cookies["user_id"] === urlDatabase[req.params.id].userID) {
+    urlDatabase[req.params.id].longURL = req.body.longURL;
+    res.redirect("/urls");
+  } else {
+    res.status(403).send('403 Error: Forbidden');
+  }
 });
 
 //DELETE BUTTON POST ON INDEX PAGE
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect('/urls');
+  if (req.cookies["user_id"] === urlDatabase[req.params.shortURL].userID) {
+    delete urlDatabase[req.params.shortURL];
+    res.redirect("/urls");
+  } else {
+    res.status(403).send('403 Error: Forbidden');
+  }
 });
 
 //LOGOUT POST ROUTE & REDIRECT TO /URLS
