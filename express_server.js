@@ -2,9 +2,13 @@ const express = require("express");
 const app = express();
 const PORT = 8080;
 
-//COOKIE PARSER MIDDLEWARE
-let cookieParser = require('cookie-parser');
-app.use(cookieParser());
+//COOKIE SESSIONS MIDDLEWARE
+const cookieSession = require('cookie-session')
+
+app.use(cookieSession({
+  name: 'session',
+  keys: ['key1', 'key2']
+ }));
 
 //BODY PARSER MIDDLEWARE
 const bodyParser = require("body-parser");
@@ -12,6 +16,7 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 app.set("view engine", "ejs");
 
+//HASHED PASSWORD MIDDLEWARE
 const bcrypt = require('bcrypt');
 
 //PASS THE NUMBER OF CHARACTERS YOU'D LIKE TO PRODUCE
@@ -52,13 +57,6 @@ const urlsForUser = (id) => {
   return urlsForUser;
 };
   
-// //OLD URL DATA
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com"
-// };
-
-
 //NEW DATA OBJECT OF OBJECTS
 const urlDatabase = {
   b6UTxQ: { longURL: "http://www.tsn.ca", userID: "userRandomID" },
@@ -81,28 +79,23 @@ const users = {
   }
 };
 
-// //HOME PAGE
-// app.get("/", (req, res) => {
-//   res.send("Hello!");
-// });
-
-//URLS GET REQUEST
+//RENDERS URL INDEX PAGE
 app.get("/urls", (req, res) => {
   let templateVars = {
-    urls: urlsForUser(req.cookies["user_id"]),
-    userID: users[req.cookies["user_id"]]
+    urls: urlsForUser(req.session.user_id),
+    userID: users[req.session.user_id]
   };
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     res.render("urls_index", templateVars);
   } else {
     res.redirect("/login");
   }
 });
 
-//NEW URLS GET REQUEST TO RENDER PAGE
+//RENDERS CREATE NEW URL's PAGE
 app.get("/urls/new", (req, res) => {
-  let templateVars = { userID: users[req.cookies["user_id"]]  };
-  if (req.cookies["user_id"]) {
+  let templateVars = { userID: users[req.session.user_id]  };
+  if (req.session.user_id) {
     res.render("urls_new", templateVars);
   } else {
     res.redirect("/login");
@@ -111,11 +104,11 @@ app.get("/urls/new", (req, res) => {
 
 //RENDERS REGISTRATION PAGE
 app.get("/register", (req, res) => {
-  let templateVars = { userID: users[req.cookies["user_id"]]  };
+  let templateVars = { userID: users[req.session.user_id]  };
   res.render("register", templateVars);
 });
 
-//REDIRECT AFTER COMPLETING THE REGISTRATION FORM
+//REDIRECT AFTER REGISTRATION FORM COMPLETION
 app.post("/register", (req, res) => {
   if (req.body.email === '' || req.body.password === '') {
     res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
@@ -133,8 +126,7 @@ app.post("/register", (req, res) => {
     };
 
     users[userID] = newUser;
-    console.log(users);
-    res.cookie('user_id', userID);
+    req.session.user_id = userID;
     res.redirect("/urls");
   }
 });
@@ -145,26 +137,25 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
-//LOGIN POST ROUTE & REDIRECT TO /URLS
+//LOGIN POST ROUTE REDIRECT TO /URLS INDEX
 app.post("/login", (req, res) => {
   if (req.body.email === '' || req.body.password === '') {
     res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
   } else if (!emailLookupHelper(req.body.email) || !verifyUser(req.body.email, req.body.password)) {
     res.status(403).send('403 Error: Forbidden');
   } else {
-    console.log(users);
     let userID = verifyUser(req.body.email, req.body.password);
-    res.cookie('user_id', userID);
+    req.session.user_id = userID;
     res.redirect('/urls');
   }
 });
 
-//POST REQUEST TO GENERATE NEW SHORT & LONG URL IN DATABASE --> REDIRECT TO urls_show
+//POST REQUEST GENERATES NEW SHORT & LONG URL IN DATABASE --> REDIRECTS TO urls_show
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString(6);
   urlDatabase[shortURL] = {
     longURL: req.body.longURL,
-    userID: req.cookies["user_id"]
+    userID: req.session.user_id
   };
   res.redirect(`/urls/${shortURL}`);
 });
@@ -174,35 +165,35 @@ app.get("/urls/:shortURL", (req, res) => {
   let templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    userID: users[req.cookies["user_id"]]
+    userID: users[req.session.user_id]
   };
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     res.render("urls_show", templateVars);
   } else {
     res.redirect("/login");
   }
 });
 
-//REDIRECTS TO LONG URL FROM SHORT URL -- EXAMPLE:"/u/gs5las"
+//REDIRECTS TO THE LONG URL FROM SHORT URL -- EXAMPLE:"/u/gs5las"
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
-//EDIT BUTTON REDIRECT ON INDEX PAGE TO URL SHOW
+//EDIT BUTTON REDIRECT FROM INDEX PAGE TO URL SHOW PAGE
 app.post("/urls/:shortURL/edit", (req, res) => {
   let templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    userID: users[req.cookies["user_id"]]
+    userID: users[req.session.user_id]
   };
   res.render("urls_show", templateVars);
   //res.redirect(`/urls/${req.params.shortURL}`);
 });
 
-//EDIT POST ROUTE TO UPDATE URL RESOURCE
+//EDIT POST REQUEST UPDATES URL RESOURCE
 app.post("/urls/:id", (req, res) => {
-  if (req.cookies["user_id"] === urlDatabase[req.params.id].userID) {
+  if (req.session.user_id === urlDatabase[req.params.id].userID) {
     urlDatabase[req.params.id].longURL = req.body.longURL;
     res.redirect("/urls");
   } else {
@@ -210,9 +201,9 @@ app.post("/urls/:id", (req, res) => {
   }
 });
 
-//DELETE BUTTON POST ON INDEX PAGE
+//DELETE BUTTON POST REQUEST ON INDEX PAGE
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (req.cookies["user_id"] === urlDatabase[req.params.shortURL].userID) {
+  if (req.session.user_id === urlDatabase[req.params.shortURL].userID) {
     delete urlDatabase[req.params.shortURL];
     res.redirect("/urls");
   } else {
@@ -220,34 +211,13 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   }
 });
 
-//LOGOUT POST ROUTE & REDIRECT TO /URLS
+//LOGOUT POST ROUTE CLEARS COOKIES & REDIRECT TO /URLS
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session = null
   res.redirect('/urls');
 });
-
-// //GET json FILE OF URLDATABASE
-// app.get("/urls.json", (req, res) => {
-//   res.json(urlDatabase);
-// });
-
-// //HELLO ROUTE
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
 
 //LISTENING
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
-
-//EXAMPLE OF TWO REQUESTS THAT WON'T WORK TOGETHER DUE TO SCOPE
-// app.get("/set", (req, res) => {
-//   const a = 1;
-//   res.send(`a = ${a}`);
-//  });
- 
-//  app.get("/fetch", (req, res) => {
-//   res.send(`a = ${a}`);
-//  });
