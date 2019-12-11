@@ -1,6 +1,12 @@
-const express = require("express");
+const express = require('express');
 const app = express();
 const PORT = 8080;
+const { 
+  getUserByEmail, 
+  generateRandomString, 
+  urlsForUser, 
+  verifyUser 
+} = require('./helpers');
 
 //COOKIE SESSIONS MIDDLEWARE
 const cookieSession = require('cookie-session')
@@ -19,44 +25,6 @@ app.set("view engine", "ejs");
 //HASHED PASSWORD MIDDLEWARE
 const bcrypt = require('bcrypt');
 
-//PASS THE NUMBER OF CHARACTERS YOU'D LIKE TO PRODUCE
-const generateRandomString = (length) => {
-  return Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
-};
-
-//EMAIL LOOKUP HELPER
-const emailLookupHelper = (email) => {
-  let usersValuesArr = Object.values(users);
-  for (let userValue of usersValuesArr) {
-    if (userValue.email === email) {
-      return true;
-    }
-  }
-  return false;
-};
-
-//VERIFY USER HELPER
-const verifyUser = (email, password) => {
-  let usersValuesArr = Object.values(users);
-  for (let userValue of usersValuesArr) {
-    if (userValue.email === email && bcrypt.compareSync(password, userValue.hashedPassword)) {
-      return userValue.id;
-    }
-  }
-  return false;
-};
-
-//VALIDATES USER ACCESS TO SPECIFIC ROUTES/PAGES
-const urlsForUser = (id) => {
-  let urlsForUser = {};
-  for (let url in urlDatabase) {
-    if (urlDatabase[url].userID === id) {
-      urlsForUser[url] = urlDatabase[url];
-    }
-  }
-  return urlsForUser;
-};
-  
 //NEW DATA OBJECT OF OBJECTS
 const urlDatabase = {
   b6UTxQ: { longURL: "http://www.tsn.ca", userID: "userRandomID" },
@@ -82,7 +50,7 @@ const users = {
 //RENDERS URL INDEX PAGE
 app.get("/urls", (req, res) => {
   let templateVars = {
-    urls: urlsForUser(req.session.user_id),
+    urls: urlsForUser(req.session.user_id, urlDatabase),
     userID: users[req.session.user_id]
   };
   if (req.session.user_id) {
@@ -110,9 +78,10 @@ app.get("/register", (req, res) => {
 
 //REDIRECT AFTER REGISTRATION FORM COMPLETION
 app.post("/register", (req, res) => {
+  console.log('REGISTER GET USER BY EMAIL', getUserByEmail(req.body.email, users));
   if (req.body.email === '' || req.body.password === '') {
     res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
-  } else if (emailLookupHelper(req.body.email)) {
+  } else if (getUserByEmail(req.body.email, users)) {
     res.status(400).send('400 Error: Bad Request');
   } else {
 
@@ -133,7 +102,7 @@ app.post("/register", (req, res) => {
 
 //RENDERS LOGIN PAGE
 app.get("/login", (req, res) => {
-  let templateVars = { userID: undefined};
+  let templateVars = { userID: null};
   res.render("login", templateVars);
 });
 
@@ -141,10 +110,10 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   if (req.body.email === '' || req.body.password === '') {
     res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
-  } else if (!emailLookupHelper(req.body.email) || !verifyUser(req.body.email, req.body.password)) {
+  } else if (!getUserByEmail(req.body.email, users) || !verifyUser(req.body.email, req.body.password, users)) {
     res.status(403).send('403 Error: Forbidden');
   } else {
-    let userID = verifyUser(req.body.email, req.body.password);
+    let userID = verifyUser(req.body.email, req.body.password, users);
     req.session.user_id = userID;
     res.redirect('/urls');
   }
