@@ -1,20 +1,20 @@
 const express = require('express');
 const app = express();
 const PORT = 8080;
-const { 
-  getUserByEmail, 
-  generateRandomString, 
-  urlsForUser, 
-  verifyUser 
+const {
+  getUserByEmail,
+  generateRandomString,
+  urlsForUser,
+  verifyUser
 } = require('./helpers');
 
 //COOKIE SESSIONS MIDDLEWARE
-const cookieSession = require('cookie-session')
+const cookieSession = require('cookie-session');
 
 app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2']
- }));
+}));
 
 //BODY PARSER MIDDLEWARE
 const bodyParser = require("body-parser");
@@ -181,7 +181,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 
 //LOGOUT POST ROUTE CLEARS COOKIES & REDIRECT TO /URLS
 app.post("/logout", (req, res) => {
-  req.session = null
+  req.session = null;
   res.redirect('/urls');
 });
 

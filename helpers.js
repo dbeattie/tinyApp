@@ -38,9 +38,9 @@ const verifyUser = (email, password, userDatabase) => {
   return false;
 };
 
-module.exports = { 
+module.exports = {
   getUserByEmail,
-  generateRandomString, 
+  generateRandomString,
   urlsForUser,
   verifyUser
 };
