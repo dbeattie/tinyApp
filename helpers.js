@@ -2,17 +2,16 @@ const bcrypt = require('bcrypt');
 
 //REFACTORED EMAIL LOOKUP HELPER
 const getUserByEmail = (email, database) => {
-  let user = false;
   let usersValuesArr = Object.values(database);
   for (let userValue of usersValuesArr) {
     if (userValue.email === email) {
-      return true;
+      return userValue.id;
     }
   }
-  return user;
+  return undefined;
 };
 
-//PASS THE NUMBER OF CHARACTERS YOU'D LIKE TO PRODUCE
+//PASS THE NUMBER OF CHARACTERS YOU'D LIKE TO PRODUCE AS A RANDOM STRING
 const generateRandomString = (length) => {
   return Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
 };

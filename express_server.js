@@ -78,7 +78,6 @@ app.get("/register", (req, res) => {
 
 //REDIRECT AFTER REGISTRATION FORM COMPLETION
 app.post("/register", (req, res) => {
-  console.log('REGISTER GET USER BY EMAIL', getUserByEmail(req.body.email, users));
   if (req.body.email === '' || req.body.password === '') {
     res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
   } else if (getUserByEmail(req.body.email, users)) {
