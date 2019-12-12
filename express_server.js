@@ -13,7 +13,6 @@ const {
   verifyUser
 } = require('./helpers');
 
-// override with POST having ?_method=DELETE
 app.use(methodOverride('_method'))
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieSession({
@@ -24,10 +23,10 @@ app.use(cookieSession({
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  b6UTxQ: { longURL: "http://www.tsn.ca", userID: "userRandomID" },
-  i3BoGr: { longURL: "http://www.google.ca", userID: "userRandomID" },
-  b2xVn2: { longURL: "http://www.lighthouselabs.ca", userID: "user2RandomID" },
-  sm5xK9: { longURL: "http://jaysfromthecouch.com/", userID: "user2RandomID" }
+  b6UTxQ: { longURL: "http://www.tsn.ca", userID: "userRandomID", visits: 0},
+  i3BoGr: { longURL: "http://www.google.ca", userID: "userRandomID", visits: 0},
+  b2xVn2: { longURL: "http://www.lighthouselabs.ca", userID: "user2RandomID", visits: 0},
+  sm5xK9: { longURL: "http://jaysfromthecouch.com/", userID: "user2RandomID", visits: 0}
 };
 
 const users = {
@@ -74,11 +73,16 @@ app.get("/urls/new", (req, res) => {
 //GENERATES NEW SHORT & LONG URL IN DATABASE --> REDIRECTS TO URL'S SHOW
 app.post("/urls", (req, res) => {
   let shortURL = generateRandomString(6);
-  urlDatabase[shortURL] = {
-    longURL: req.body.longURL,
-    userID: req.session.user_id
-  };
-  res.redirect(`/urls/${shortURL}`);
+  if (req.session.user_id) {
+    urlDatabase[shortURL] = {
+      longURL: req.body.longURL,
+      userID: req.session.user_id,
+      visits: 0
+    };
+    res.redirect(`/urls/${shortURL}`);
+  }else {
+    res.redirect("/login");
+  }
 });
 
 //RENDERS REGISTRATION PAGE
@@ -101,7 +105,7 @@ app.post("/register", (req, res) => {
     let newUser = {
       id: userID,
       email: req.body["email"],
-      hashedPassword: hashedPassword
+      hashedPassword: hashedPassword,
     };
 
     users[userID] = newUser;
@@ -135,6 +139,7 @@ app.get("/urls/:shortURL", (req, res) => {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
     userID: users[req.session.user_id],
+    visits: urlDatabase[req.params.shortURL].visits
   };
   if (req.session.user_id) {
     res.render("urls_show", templateVars);
@@ -145,6 +150,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //REDIRECTS TO THE REAL LONG URL FROM SHORT URL LINK ON URL SHOW PAGE
 app.get("/u/:shortURL", (req, res) => {
+  urlDatabase[req.params.shortURL].visits++;
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
@@ -154,7 +160,8 @@ app.post("/urls/:shortURL/edit", (req, res) => {
   let templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    userID: users[req.session.user_id]
+    userID: users[req.session.user_id],
+    visits: urlDatabase[req.params.shortURL].visits
   };
   res.render("urls_show", templateVars);
 });
