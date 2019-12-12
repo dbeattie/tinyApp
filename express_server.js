@@ -2,6 +2,9 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const app = express();
 const PORT = 8080;
+const bodyParser = require("body-parser");
+const cookieSession = require('cookie-session');
+
 const {
   getUserByEmail,
   generateRandomString,
@@ -9,16 +12,11 @@ const {
   verifyUser
 } = require('./helpers');
 
-//COOKIE SESSIONS MIDDLEWARE
-const cookieSession = require('cookie-session');
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2']
 }));
-
-//BODY PARSER MIDDLEWARE
-const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({extended: true}));
 
 app.set("view engine", "ejs");
 
@@ -42,6 +40,11 @@ const users = {
   }
 };
 
+//REDIRECTS HOME PAGE TO /URLS
+app.get('/', (req, res) => {
+  res.redirect('/urls');
+});
+
 //RENDERS URL INDEX PAGE
 app.get("/urls", (req, res) => {
   let templateVars = {
@@ -55,7 +58,7 @@ app.get("/urls", (req, res) => {
   }
 });
 
-//RENDERS CREATE NEW URL's PAGE
+//RENDERS CREATE NEW URL'S PAGE
 app.get("/urls/new", (req, res) => {
   let templateVars = { userID: users[req.session.user_id]  };
   if (req.session.user_id) {
@@ -63,6 +66,16 @@ app.get("/urls/new", (req, res) => {
   } else {
     res.redirect("/login");
   }
+});
+
+//GENERATES NEW SHORT & LONG URL IN DATABASE --> REDIRECTS TO URL'S SHOW
+app.post("/urls", (req, res) => {
+  let shortURL = generateRandomString(6);
+  urlDatabase[shortURL] = {
+    longURL: req.body.longURL,
+    userID: req.session.user_id
+  };
+  res.redirect(`/urls/${shortURL}`);
 });
 
 //RENDERS REGISTRATION PAGE
@@ -100,7 +113,7 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
-//LOGIN POST ROUTE REDIRECT TO /URLS INDEX
+//LOGIN REDIRECT TO /URLS INDEX
 app.post("/login", (req, res) => {
   if (req.body.email === '' || req.body.password === '') {
     res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
@@ -113,19 +126,8 @@ app.post("/login", (req, res) => {
   }
 });
 
-//POST REQUEST GENERATES NEW SHORT & LONG URL IN DATABASE --> REDIRECTS TO urls_show
-app.post("/urls", (req, res) => {
-  let shortURL = generateRandomString(6);
-  urlDatabase[shortURL] = {
-    longURL: req.body.longURL,
-    userID: req.session.user_id
-  };
-  res.redirect(`/urls/${shortURL}`);
-});
-
-//RENDERS urls_show CONDITIONALLY
+//RENDERS /URLS SHOW CONDITIONALLY
 app.get("/urls/:shortURL", (req, res) => {
-  console.log('USER:', users[req.session.user_id].id);
   let templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
@@ -138,7 +140,7 @@ app.get("/urls/:shortURL", (req, res) => {
   }
 });
 
-//REDIRECTS TO THE LONG URL FROM SHORT URL -- EXAMPLE:"/u/gs5las"
+//REDIRECTS TO THE REAL LONG URL FROM SHORT URL LINK ON URL SHOW PAGE
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
@@ -152,10 +154,9 @@ app.post("/urls/:shortURL/edit", (req, res) => {
     userID: users[req.session.user_id]
   };
   res.render("urls_show", templateVars);
-  //res.redirect(`/urls/${req.params.shortURL}`);
 });
 
-//EDIT POST REQUEST UPDATES URL RESOURCE
+//UPDATES LONG URL RESOURCE ON SUBMISSION
 app.post("/urls/:id", (req, res) => {
   if (req.session.user_id === urlDatabase[req.params.id].userID) {
     urlDatabase[req.params.id].longURL = req.body.longURL;
@@ -165,7 +166,7 @@ app.post("/urls/:id", (req, res) => {
   }
 });
 
-//DELETE BUTTON POST REQUEST ON INDEX PAGE
+//DELETE BUTTON REDIRECTION ON INDEX PAGE
 app.post("/urls/:shortURL/delete", (req, res) => {
   if (req.session.user_id === urlDatabase[req.params.shortURL].userID) {
     delete urlDatabase[req.params.shortURL];
@@ -175,13 +176,12 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   }
 });
 
-//LOGOUT POST ROUTE CLEARS COOKIES & REDIRECT TO /URLS
+//LOGOUT CLEARS COOKIES & REDIRECTS TO /URLS
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect('/urls');
 });
 
-//LISTENING
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
+  console.log(`TinyApp listening on port ${PORT}!`);
 });
