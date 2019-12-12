@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 
-//REFACTORED EMAIL LOOKUP HELPER
+//GET USER ID BY EMAIL
 const getUserByEmail = (email, database) => {
   let usersValuesArr = Object.values(database);
   for (let userValue of usersValuesArr) {
