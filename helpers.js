@@ -16,7 +16,7 @@ const generateRandomString = (length) => {
   return Math.round((Math.pow(36, length + 1) - Math.random() * Math.pow(36, length))).toString(36).slice(1);
 };
 
-//VALIDATES USER ACCESS TO SPECIFIC ROUTES/PAGES
+//RETURNS SHORTURL ACCESS TO SPECIFIC ROUTES/PAGES
 const urlsForUser = (id, database) => {
   let urlsForUser = {};
   for (let url in database) {

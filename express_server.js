@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
 const app = express();
 const PORT = 8080;
 const {
@@ -10,7 +11,6 @@ const {
 
 //COOKIE SESSIONS MIDDLEWARE
 const cookieSession = require('cookie-session');
-
 app.use(cookieSession({
   name: 'session',
   keys: ['key1', 'key2']
@@ -22,10 +22,6 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 app.set("view engine", "ejs");
 
-//HASHED PASSWORD MIDDLEWARE
-const bcrypt = require('bcrypt');
-
-//NEW DATA OBJECT OF OBJECTS
 const urlDatabase = {
   b6UTxQ: { longURL: "http://www.tsn.ca", userID: "userRandomID" },
   i3BoGr: { longURL: "http://www.google.ca", userID: "userRandomID" },
@@ -33,7 +29,6 @@ const urlDatabase = {
   sm5xK9: { longURL: "http://jaysfromthecouch.com/", userID: "user2RandomID" }
 };
 
-//USERS
 const users = {
   "userRandomID": {
     id: "userRandomID",
@@ -128,12 +123,13 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
-//SHORT URL GET REQUEST --> NEEDS TO BE AFTER NEW URLS GET REQUEST
+//RENDERS urls_show CONDITIONALLY
 app.get("/urls/:shortURL", (req, res) => {
+  console.log('USER:', users[req.session.user_id].id);
   let templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    userID: users[req.session.user_id]
+    userID: users[req.session.user_id],
   };
   if (req.session.user_id) {
     res.render("urls_show", templateVars);
