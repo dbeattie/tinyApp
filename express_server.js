@@ -1,4 +1,5 @@
 const express = require('express');
+const methodOverride = require('method-override')
 const bcrypt = require('bcrypt');
 const app = express();
 const PORT = 8080;
@@ -12,6 +13,8 @@ const {
   verifyUser
 } = require('./helpers');
 
+// override with POST having ?_method=DELETE
+app.use(methodOverride('_method'))
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(cookieSession({
   name: 'session',
@@ -157,7 +160,7 @@ app.post("/urls/:shortURL/edit", (req, res) => {
 });
 
 //UPDATES LONG URL RESOURCE ON SUBMISSION
-app.post("/urls/:id", (req, res) => {
+app.put("/urls/:id", (req, res) => {
   if (req.session.user_id === urlDatabase[req.params.id].userID) {
     urlDatabase[req.params.id].longURL = req.body.longURL;
     res.redirect("/urls");
@@ -167,7 +170,7 @@ app.post("/urls/:id", (req, res) => {
 });
 
 //DELETE BUTTON REDIRECTION ON INDEX PAGE
-app.post("/urls/:shortURL/delete", (req, res) => {
+app.delete("/urls/:shortURL", (req, res) => {
   if (req.session.user_id === urlDatabase[req.params.shortURL].userID) {
     delete urlDatabase[req.params.shortURL];
     res.redirect("/urls");
