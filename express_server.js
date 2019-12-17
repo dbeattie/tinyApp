@@ -42,7 +42,6 @@ const users = {
   }
 };
 
-//REDIRECTS HOME PAGE TO /URLS
 app.get('/', (req, res) => {
   res.redirect('/urls');
 });
@@ -123,9 +122,9 @@ app.get("/login", (req, res) => {
 //LOGIN REDIRECT TO /URLS INDEX
 app.post("/login", (req, res) => {
   if (req.body.email === '' || req.body.password === '') {
-    res.status(400).send('400 Error: Bad Request -- Fields Cannot Be Empty');
+    res.status(400).send(`<html><body><center><br/><br/>400 Error: Bad Request -- Fields Cannot Be Empty<center></body></html>`);
   } else if (!getUserByEmail(req.body.email, users) || !verifyUser(req.body.email, req.body.password, users)) {
-    res.status(403).send('403 Error: Forbidden');
+    res.status(403).send(`<html><body><center><br/><br/>403 Error: Forbidden -- Password or Email Is Incorrect or Does Not Exist<center></body></html>`);
   } else {
     let userID = verifyUser(req.body.email, req.body.password, users);
     req.session.user_id = userID;
@@ -172,7 +171,7 @@ app.put("/urls/:id", (req, res) => {
     urlDatabase[req.params.id].longURL = req.body.longURL;
     res.redirect("/urls");
   } else {
-    res.status(403).send('403 Error: Forbidden');
+    res.status(403).send(`<html><body><center><br/><br/>403 Error: Forbidden -- You Do Not Have Access to This Page<center></body></html>`);
   }
 });
 
@@ -182,7 +181,7 @@ app.delete("/urls/:shortURL", (req, res) => {
     delete urlDatabase[req.params.shortURL];
     res.redirect("/urls");
   } else {
-    res.status(403).send('403 Error: Forbidden');
+    res.status(403).send(`<html><body><center><br/><br/>403 Error: Forbidden -- You Do Not Have Access to This Page<center></body></html>`);
   }
 });
 

@@ -1,6 +1,5 @@
 const bcrypt = require('bcrypt');
 
-//GET USER ID BY EMAIL
 const getUserByEmail = (email, database) => {
   let usersValuesArr = Object.values(database);
   for (let userValue of usersValuesArr) {
@@ -27,7 +26,6 @@ const urlsForUser = (id, database) => {
   return urlsForUser;
 };
 
-//VERIFY USER HELPER
 const verifyUser = (email, password, userDatabase) => {
   let usersValuesArr = Object.values(userDatabase);
   for (let userValue of usersValuesArr) {
